@@ -506,7 +506,7 @@ bfq_entity_service_tree(struct bfq_entity *entity)
 	return sched_data->service_tree + idx;
 }
 
-static inline struct bfq_queue cic_to_bfqq(struct cfq_io_context *cic,
+static inline struct bfq_queue *cic_to_bfqq(struct cfq_io_context *cic,
 					    int is_sync)
 {
 	return cic->cfqq[!!is_sync];
