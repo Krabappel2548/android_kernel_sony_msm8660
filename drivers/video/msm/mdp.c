@@ -1404,11 +1404,9 @@ void mdp_pipe_kickoff(uint32 term, struct msm_fb_data_type *mfd)
 		outpdw(MDP_BASE + 0x0004, 0);
 	} else if (term == MDP_OVERLAY1_TERM) {
 		mdp_pipe_ctrl(MDP_OVERLAY1_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-		mdp_lut_enable();
 		outpdw(MDP_BASE + 0x0008, 0);
 	} else if (term == MDP_OVERLAY2_TERM) {
 		mdp_pipe_ctrl(MDP_OVERLAY2_BLOCK, MDP_BLOCK_POWER_ON, FALSE);
-		mdp_lut_enable();
 		outpdw(MDP_BASE + 0x00D0, 0);
 	}
 #else
@@ -1814,19 +1812,21 @@ irqreturn_t mdp_isr(int irq, void *ptr)
 				    now.tv_usec - mdp_dma2_timeval.tv_usec;
 			}
 #ifndef CONFIG_FB_MSM_MDP303
-			dma = &dma2_data;
-			dma->busy = FALSE;
-			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
-				      TRUE);
-			complete(&dma->comp);
+		dma = &dma2_data;
+		spin_lock_irqsave(&mdp_spin_lock, flag);
+		dma->busy = FALSE;
+		spin_unlock_irqrestore(&mdp_spin_lock, flag);
+		mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF, TRUE);
+		complete(&dma->comp);
 #else
-			if (mdp_prim_panel_type == MIPI_CMD_PANEL) {
-				dma = &dma2_data;
-				dma->busy = FALSE;
-				mdp_pipe_ctrl(MDP_DMA2_BLOCK,
-					MDP_BLOCK_POWER_OFF, TRUE);
-				complete(&dma->comp);
-			}
+		if (mdp_prim_panel_type == MIPI_CMD_PANEL) {
+			dma = &dma2_data;
+			spin_lock_irqsave(&mdp_spin_lock, flag);
+			dma->busy = FALSE;
+			spin_unlock_irqrestore(&mdp_spin_lock, flag);
+			mdp_pipe_ctrl(MDP_DMA2_BLOCK, MDP_BLOCK_POWER_OFF,
+				TRUE);
+			complete(&dma->comp);
 #endif
 		}
 		/* PPP Complete */
